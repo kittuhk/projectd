@@ -13,7 +13,7 @@ pipeline {
         stage('Authenticate to GAR') {
             steps {
                 echo 'Authenticating to GAR...'
-                withCredentials([file(credentialsId: 'gcp-sa-key', variable: 'GCP_KEY')]) {
+                withCredentials([file(credentialsId: 'gar-key', variable: 'GCP_KEY')]) {
                     sh '''
                         gcloud auth activate-service-account --key-file=$GCP_KEY
                         gcloud auth configure-docker us-docker.pkg.dev
@@ -64,6 +64,7 @@ pipeline {
         }
     }
 }
+
 
 
 
