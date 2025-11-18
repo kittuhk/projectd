@@ -3,7 +3,7 @@ version: '3.8'
 
 services:
   web:
-    image: us-docker.pkg.dev/gowtham-project-476511/python-app/img:v1
+    image: venkatgurram/flaskapp:v2
     environment:
       - NODE_HOSTNAME=${NODE_HOSTNAME}
     deploy:
@@ -31,3 +31,4 @@ volumes:
 networks:
   app-network:
     driver: overlay
+
