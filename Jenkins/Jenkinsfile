@@ -8,6 +8,7 @@ pipeline {
     stages {
 
         stage('Build Docker Image') {
+            when { expression { params.TERRAFORM_ACTION == 'apply' } }
             steps {
                 echo 'Building the Docker image...'
                 sh 'docker build -t python-app .'
@@ -15,6 +16,7 @@ pipeline {
         }
 
         stage('Authenticate to GAR') {
+            when { expression { params.TERRAFORM_ACTION == 'apply' } }
             steps {
                 echo 'Authenticating to Google Artifact Registry...'
                 withCredentials([file(credentialsId: 'gar-key', variable: 'GCP_KEY')]) {
@@ -27,6 +29,7 @@ pipeline {
         }
 
         stage('Push image to GAR') {
+            when { expression { params.TERRAFORM_ACTION == 'apply' } }
             steps {
                 echo 'Pushing image to GAR...'
                 sh "docker tag python-app:latest us-docker.pkg.dev/hari-chandu-anunay/projectd/img:v1"
@@ -79,4 +82,3 @@ pipeline {
         }
     }
 }
-
