@@ -1,0 +1,68 @@
+pipeline {
+    agent any
+    parameters {
+        choice(name: 'TERRAFORM_ACTION', choices: ['apply', 'destroy'], description: 'Terraform action to perform')
+    }
+    stages {
+        stage('Build') {
+            steps {
+                echo 'Building the dockerfile...'
+                sh 'docker build -t python-app .'
+            }
+        }
+        // stage('Authenticate to GAR') {
+        //     steps {
+        //         echo 'Authenticating to GAR...'
+        //         withCredentials([file(credentialsId: 'gcp-sa-key', variable: 'GCP_KEY')]) {
+        //             sh '''
+        //                 gcloud auth activate-service-account --key-file=$GCP_KEY
+        //                 gcloud auth configure-docker us-docker.pkg.dev
+        //             '''
+        //         }
+        //     }
+        // }
+
+
+        stage('push image to GAR') {
+            steps {
+                echo 'pushing image to GAR...'
+                sh "docker tag python-app:latest us-docker.pkg.dev/hari-chandu-anunay/projectd/img:v1"
+                sh "docker push us-docker.pkg.dev/hari-chandu-anunay/projectd/img:v1"
+            }
+        }
+        stage('Terraform ') {
+            when {
+                expression { return params.TERRAFORM_ACTION == 'apply'}
+            }
+            steps {
+                echo 'Terraform init and apply...'
+                dir ('terraform') {
+                    
+                    sh ' terraform init '
+                    sh " terraform apply --auto-approve"
+                }
+            }
+        }
+        stage("destroy") {
+            when {
+                expression { return params.TERRAFORM_ACTION == 'destroy' }
+            }
+            steps {
+                echo 'Terraform destroy...'
+                sh  "terraform destroy --auto-approve"
+            }
+        }
+        stage("Ansible") {
+            steps {
+                echo 'Running ansible playbook...'
+                sh '''
+                    export ANSIBLE_HOST_KEY_CHECKING=False 
+                    ansible-playbook -i /root/inv.py play.yaml \
+                        --ssh-extra-args="-o StrictHostKeyChecking=no"
+                '''
+            }
+        }
+    }
+}
+
+
