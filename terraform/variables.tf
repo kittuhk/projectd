@@ -1,6 +1,7 @@
 variable "project" {default ="hari-chandu-anunay"}
-variable "region" { default = "us-central1" }
-variable "zone"   { default = "us-central1-a" }
+variable "region" { default = "us-east4" }
+variable "zone"   { default = "us-east4-b" }
 variable "ssh_user" { default = "ubuntu" }
+
 
 
