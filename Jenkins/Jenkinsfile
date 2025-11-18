@@ -15,18 +15,18 @@ pipeline {
             }
         }
 
-        stage('Authenticate to GAR') {
-            when { expression { params.TERRAFORM_ACTION == 'apply' } }
-            steps {
-                echo 'Authenticating to Google Artifact Registry...'
-                withCredentials([file(credentialsId: 'gar-key', variable: 'GCP_KEY')]) {
-                    sh '''
-                        gcloud auth activate-service-account --key-file=$GCP_KEY
-                        gcloud auth configure-docker us-docker.pkg.dev
-                    '''
-                }
-            }
-        }
+        // stage('Authenticate to GAR') {
+        //     when { expression { params.TERRAFORM_ACTION == 'apply' } }
+        //     steps {
+        //         echo 'Authenticating to Google Artifact Registry...'
+        //         withCredentials([file(credentialsId: 'gar-key', variable: 'GCP_KEY')]) {
+        //             sh '''
+        //                 gcloud auth activate-service-account --key-file=$GCP_KEY
+        //                 gcloud auth configure-docker us-docker.pkg.dev
+        //             '''
+        //         }
+        //     }
+        // }
 
         stage('Push image to GAR') {
             when { expression { params.TERRAFORM_ACTION == 'apply' } }
