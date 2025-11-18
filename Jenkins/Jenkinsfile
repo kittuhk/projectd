@@ -35,6 +35,7 @@ pipeline {
                 expression { return params.TERRAFORM_ACTION == 'apply'}
             }
             steps {
+                withCredentials([file(credentialsId: 'gar-key', variable: 'GCLOUD_KEY')]) {
                 echo 'Terraform init and apply...'
                 dir ('terraform') {
                     
@@ -64,6 +65,7 @@ pipeline {
         }
     }
 }
+
 
 
 
