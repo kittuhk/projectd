@@ -1,18 +1,22 @@
 pipeline {
     agent any
+
     parameters {
         choice(name: 'TERRAFORM_ACTION', choices: ['apply', 'destroy'], description: 'Terraform action to perform')
     }
+
     stages {
-        stage('Build') {
+
+        stage('Build Docker Image') {
             steps {
-                echo 'Building the dockerfile...'
+                echo 'Building the Docker image...'
                 sh 'docker build -t python-app .'
             }
         }
+
         stage('Authenticate to GAR') {
             steps {
-                echo 'Authenticating to GAR...'
+                echo 'Authenticating to Google Artifact Registry...'
                 withCredentials([file(credentialsId: 'gar-key', variable: 'GCP_KEY')]) {
                     sh '''
                         gcloud auth activate-service-account --key-file=$GCP_KEY
@@ -22,42 +26,52 @@ pipeline {
             }
         }
 
-
-        stage('push image to GAR') {
+        stage('Push image to GAR') {
             steps {
-                echo 'pushing image to GAR...'
+                echo 'Pushing image to GAR...'
                 sh "docker tag python-app:latest us-docker.pkg.dev/hari-chandu-anunay/projectd/img:v1"
                 sh "docker push us-docker.pkg.dev/hari-chandu-anunay/projectd/img:v1"
             }
         }
-        stage('Terraform ') {
-            when {
-                expression { return params.TERRAFORM_ACTION == 'apply'}
-            }
+
+        stage('Terraform Apply') {
+            when { expression { params.TERRAFORM_ACTION == 'apply' } }
             steps {
+                echo 'Running Terraform apply...'
                 withCredentials([file(credentialsId: 'gar-key', variable: 'GCLOUD_KEY')]) {
-                echo 'Terraform init and apply...'
-                dir ('terraform') {
-                    
-                    sh ' terraform init '
-                    sh " terraform apply --auto-approve"
+                    dir('terraform') {
+                        sh '''
+                            gcloud auth activate-service-account --key-file=$GCLOUD_KEY
+                            terraform init
+                            terraform apply -auto-approve
+                        '''
+                    }
                 }
             }
         }
-        stage("destroy") {
-            when {
-                expression { return params.TERRAFORM_ACTION == 'destroy' }
-            }
+
+        stage('Terraform Destroy') {
+            when { expression { params.TERRAFORM_ACTION == 'destroy' } }
             steps {
-                echo 'Terraform destroy...'
-                sh  "terraform destroy --auto-approve"
+                echo 'Running Terraform destroy...'
+                withCredentials([file(credentialsId: 'gar-key', variable: 'GCLOUD_KEY')]) {
+                    dir('terraform') {
+                        sh '''
+                            gcloud auth activate-service-account --key-file=$GCLOUD_KEY
+                            terraform init
+                            terraform destroy -auto-approve
+                        '''
+                    }
+                }
             }
         }
-        stage("Ansible") {
+
+        stage('Ansible Deploy') {
+            when { expression { params.TERRAFORM_ACTION == 'apply' } }
             steps {
-                echo 'Running ansible playbook...'
+                echo 'Running Ansible playbook...'
                 sh '''
-                    export ANSIBLE_HOST_KEY_CHECKING=False 
+                    export ANSIBLE_HOST_KEY_CHECKING=False
                     ansible-playbook -i /root/inv.py play.yaml \
                         --ssh-extra-args="-o StrictHostKeyChecking=no"
                 '''
@@ -65,8 +79,3 @@ pipeline {
         }
     }
 }
-}
-
-
-
-
