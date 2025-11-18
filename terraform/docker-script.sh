@@ -1,34 +1,29 @@
 #!/bin/bash
 
-sudo apt update
-sudo apt upgrade -y
+set -e
 
-sudo apt install openjdk-21-jdk -y
+echo "====== Updating system ======"
+apt update -y
+apt upgrade -y
 
-sudo apt-get update
-sudo apt-get install -y ca-certificates curl
+echo "====== Installing Docker (docker.io) ======"
+apt install -y docker.io
 
-sudo install -m 0755 -d /etc/apt/keyrings
-sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
-sudo chmod a+r /etc/apt/keyrings/docker.asc
+echo "====== Enabling & starting Docker ======"
+systemctl enable docker
+systemctl start docker
 
-echo \
-"deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
-$(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}") stable" | \
-sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+echo "====== Adding current user to docker group ======"
+# Automatically detects the current login user
+CURRENT_USER=$(logname)
+usermod -aG docker $CURRENT_USER
 
-sudo apt update
-sudo apt upgrade -y
+echo "====== Fixing docker.sock permission issue ======"
+# Sometimes docker.sock gets reset after reboot or install
+chmod 666 /var/run/docker.sock
 
-sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+echo "====== Restarting Docker ======"
+systemctl restart docker
 
-sudo usermod -aG docker ubuntu
-
-# ---- FIXED LAST 4 LINES ----
-sudo tee /etc/sudoers.d/ubuntu_nopasswd >/dev/null <<'EOT'
-ubuntu ALL=(ALL) NOPASSWD:ALL
-EOT
-
-sudo chmod 440 /etc/sudoers.d/ubuntu_nopasswd
-# -----------------------------------
-
+echo "====== Docker Installation Completed Successfully ======"
+echo "NOTE: You must log out and login again for group changes to apply."
